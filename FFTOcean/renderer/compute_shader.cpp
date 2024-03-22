@@ -86,7 +86,7 @@ unsigned int ComputeShader::getID() const
     return this->ID;
 }
 
-void checkCompileErrors(unsigned int shader, std::string type)
+void ComputeShader::checkCompileErrors(unsigned int shader, std::string type)
 {
     int success;
     char infoLog[1024];
