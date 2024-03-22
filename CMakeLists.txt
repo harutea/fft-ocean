@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(fft-ocean)
+project(FFTOcean)
 
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
-    ${CMAKE_SOURCE_DIR}/fft-ocean/*.cpp
+    ${CMAKE_SOURCE_DIR}/FFTOcean/*.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
@@ -32,5 +32,5 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/external/glm)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
 
 # copy auxiliary files
-file(COPY "fft-ocean/shaders/" DESTINATION "shaders/")
-file(COPY "fft-ocean/resources/" DESTINATION "resources/")
+file(COPY "FFTOcean/shaders/" DESTINATION "shaders/")
+file(COPY "FFTOcean/resources/" DESTINATION "resources/")
