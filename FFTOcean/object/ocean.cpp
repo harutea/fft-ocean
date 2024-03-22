@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <FFTOcean/renderer/shader.h>
+#include <FFTOcean/renderer/compute_shader.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -34,10 +35,25 @@ Ocean::~Ocean()
 
 void Ocean::setup()
 {
-    cout << "setup Ocean" << endl;
-    this->shader = new Shader("./shaders/Ocean.vert", "./shaders/Ocean.frag");
-
+    cout << "setup ocean" << endl;
+    this->compShader = new ComputeShader("./shaders/ocean.comp");
+    this->shader = new Shader("./shaders/ocean.vert", "./shaders/ocean.frag");
+    
     shader->use();
+
+    /* Compute Shader */
+
+    glGenTextures(1, &texture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, 
+                GL_FLOAT, NULL);
+
+    glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
     /* Set Uniforms */
     shader->setInt("texture0", 0);
@@ -109,24 +125,25 @@ void Ocean::render()
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     // cout << "render Ocean" << endl;
 
-    /* Transform */
-    shader->use();
+    compShader->use();
+    glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
 
+    // make sure writing to image has finished before read
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    /* Transform */
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    shader->use();
+    shader->setInt("tex", 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    
     glm::mat4 model = glm::mat4(1.0f);
 
-    model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+    // model = glm::scale(model, glm::vec3(10.0f, 0.5f, 0.5f));
     model = glm::translate(model, glm::vec3(initX, initY, initZ));
 
     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-
-    glm::vec3 lightPos(1.1f, 3.0f, 2.0f);
-    glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
-    glm::vec3 objectColor(0.1f, 1.0f, 0.3f);
-    shader->setVec3("lightPos", lightPos);
-    shader->setVec3("viewPos", cameraPos);
-    shader->setVec3("lightColor", lightColor);
-    shader->setVec3("objectColor", objectColor);
-    shader->setFloat("time", glfwGetTime());
 
     int modelLoc = glGetUniformLocation(shader->getID(), "model");
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));

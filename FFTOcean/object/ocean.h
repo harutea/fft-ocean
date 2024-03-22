@@ -2,6 +2,7 @@
 #define OCEAN_H
 
 #include <FFTOcean/vector/vector.h>
+#include <FFTOcean/renderer/compute_shader.h>
 #include <FFTOcean/renderer/shader.h>
 #include "object.h"
 #include <vector>
@@ -26,6 +27,8 @@ namespace FFTOcean
         void updateCameraPos(glm::vec3 _cameraPos);
 
     private:
+        const unsigned int TEXTURE_WIDTH = 512, TEXTURE_HEIGHT = 512;
+        unsigned int texture;
         int OceanSize;
     };
 

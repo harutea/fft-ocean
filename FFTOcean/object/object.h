@@ -2,6 +2,7 @@
 #define OBJECT_H
 
 #include <FFTOcean/vector/vector.h>
+#include <FFTOcean/renderer/compute_shader.h>
 #include <FFTOcean/renderer/shader.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -37,6 +38,7 @@ namespace FFTOcean
         Vector3 force;
         double mass;
         Shader *shader;
+        ComputeShader *compShader;
     };
 
 }
