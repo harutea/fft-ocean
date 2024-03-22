@@ -1,0 +1,5 @@
+build/
+.vscode/
+fft-ocean/resources/*.png
+fft-ocean/resources/*.jpg
+.DS_Store
