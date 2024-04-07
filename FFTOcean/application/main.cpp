@@ -1,12 +1,13 @@
 #include <FFTOcean/engine/engine.h>
 #include <FFTOcean/object/ocean.h>
+#include <FFTOcean/object/quad.h>
 
 int main()
 {
     FFTOcean::Engine engine;
 
-    FFTOcean::Ocean ocean(0.0f, -3.0f, 0.0f, 64);
-    engine.registerObject(&ocean);
+    FFTOcean::Ocean quad(0.0f, -2.0f, 0.0f, 64);
+    engine.registerObject(&quad);
 
     engine.run();
 
