@@ -36,8 +36,8 @@ Quad::~Quad()
 void Quad::setup()
 {
     cout << "setup quad" << endl;
-    this->compShader = new ComputeShader("./shaders/ocean.comp");
-    this->shader = new Shader("./shaders/ocean.vert", "./shaders/ocean.frag");
+    this->compShader = new ComputeShader("./shaders/test.comp");
+    this->shader = new Shader("./shaders/quad.vert", "./shaders/quad.frag");
 
     shader->use();
 
