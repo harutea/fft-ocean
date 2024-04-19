@@ -56,10 +56,12 @@ void Quad::setup()
     glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
     /* Calculate Vertex Positions */
-    float vertices[] = {-1, -1, 0, 0, 0,
-                        -1, 1, 0, 0, 1,
-                        1, 1, 0, 1, 1,
-                        1, -1, 0, 1, 0};
+    float vertices[] = {
+        // vertex position, texture
+        -1, -1, 0, 0, 0,
+        -1, 1, 0, 0, 1,
+        1, 1, 0, 1, 1,
+        1, -1, 0, 1, 0};
 
     unsigned int indices[] = {0, 1, 2,
                               0, 2, 3};
