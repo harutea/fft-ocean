@@ -19,3 +19,6 @@ cd build
 cmake .. -G "Unix Makefiles"
 make
 ```
+
+## References
+- [Flügge F.-J. 2017. Realtime GPGPU FFT Ocean Water Simulation, Institute of Embedded Systems.](https://tore.tuhh.de/bitstream/11420/1439/1/GPGPU_FFT_Ocean_Simulation.pdf)
