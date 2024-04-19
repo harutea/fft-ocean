@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <stb_image.h>
+#include <string>
 
 using namespace FFTOcean;
 using namespace std;
@@ -21,8 +22,9 @@ Quad::Quad()
     OceanSize = 32;
 }
 
-Quad::Quad(float _initX, float _initY, float _initZ, int _OceanSize)
+Quad::Quad(const char *_computeShaderSrc, float _initX, float _initY, float _initZ, int _OceanSize)
 {
+    computeShaderSrc = _computeShaderSrc;
     initX = _initX;
     initY = _initY;
     initZ = _initZ;
@@ -36,7 +38,7 @@ Quad::~Quad()
 void Quad::setup()
 {
     cout << "setup quad" << endl;
-    this->compShader = new ComputeShader("./shaders/test.comp");
+    this->compShader = new ComputeShader(computeShaderSrc);
     this->shader = new Shader("./shaders/quad.vert", "./shaders/quad.frag");
 
     shader->use();
