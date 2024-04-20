@@ -98,6 +98,11 @@ void Quad::render()
     // cout << "render Ocean" << endl;
 
     compShader->use();
+    this->compShader->setInt("N", 256);
+    this->compShader->setInt("L", 1000);
+    this->compShader->setFloat("A", 4);
+    this->compShader->setVec2("w", 1, 1);
+    this->compShader->setFloat("V", 40);
     glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
 
     // make sure writing to image has finished before read

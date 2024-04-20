@@ -11,7 +11,8 @@
 using namespace FFTOcean;
 using namespace std;
 
-ComputeShader::ComputeShader(const char* compShaderPath) {
+ComputeShader::ComputeShader(const char *compShaderPath)
+{
     string compShaderSource;
     ifstream compShaderFile;
 
@@ -81,6 +82,11 @@ void ComputeShader::setVec3(const std::string &name, float x, float y, float z) 
     glUniform3fv(glGetUniformLocation(this->ID, name.c_str()), 1, &glm::vec3(x, y, z)[0]);
 }
 
+void ComputeShader::setVec2(const std::string &name, float x, float y) const
+{
+    glUniform2fv(glGetUniformLocation(this->ID, name.c_str()), 1, &glm::vec2(x, y)[0]);
+}
+
 unsigned int ComputeShader::getID() const
 {
     return this->ID;
@@ -96,7 +102,8 @@ void ComputeShader::checkCompileErrors(unsigned int shader, std::string type)
         if (!success)
         {
             glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-            cout << "[ERROR] : Compute Shader Compilation Failed, type: " << type << "\n" << infoLog << "\n----\n";
+            cout << "[ERROR] : Compute Shader Compilation Failed, type: " << type << "\n"
+                 << infoLog << "\n----\n";
         }
         return;
     }
@@ -105,6 +112,7 @@ void ComputeShader::checkCompileErrors(unsigned int shader, std::string type)
     if (!success)
     {
         glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-        cout << "[ERROR] : Compute Shader Compilation Failed, type: " << type << "\n" << infoLog << "\n----\n";
+        cout << "[ERROR] : Compute Shader Compilation Failed, type: " << type << "\n"
+             << infoLog << "\n----\n";
     }
 }
