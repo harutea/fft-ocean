@@ -36,7 +36,7 @@ Ocean::~Ocean()
 void Ocean::setup()
 {
     cout << "setup ocean" << endl;
-    this->compShader = new ComputeShader("./shaders/ocean.comp");
+    this->compShader0 = new ComputeShader("./shaders/ocean.comp");
     this->shader = new Shader("./shaders/ocean.vert", "./shaders/ocean.frag");
 
     shader->use();
@@ -115,7 +115,7 @@ void Ocean::render()
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     // cout << "render Ocean" << endl;
 
-    compShader->use();
+    compShader0->use();
     glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
 
     // make sure writing to image has finished before read

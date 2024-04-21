@@ -17,7 +17,8 @@ namespace FFTOcean
 
     public:
         Quad();
-        Quad(const char *_computeShaderSrc, float initX, float initY, float initZ, int OceanSize);
+        Quad(float initX, float initY, float initZ);
+
         ~Quad();
         void setup();
         void render();
@@ -28,9 +29,6 @@ namespace FFTOcean
 
     private:
         const unsigned int TEXTURE_WIDTH = 512, TEXTURE_HEIGHT = 512;
-        unsigned int texture;
-        int OceanSize;
-        const char *computeShaderSrc;
     };
 
 }

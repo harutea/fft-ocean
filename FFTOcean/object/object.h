@@ -28,6 +28,7 @@ namespace FFTOcean
         unsigned int EBO;
         unsigned int texture0;
         unsigned int texture1;
+        unsigned int texture2;
         glm::mat4 view;
         glm::mat4 projection;
         glm::vec3 cameraPos;
@@ -38,7 +39,8 @@ namespace FFTOcean
         Vector3 force;
         double mass;
         Shader *shader;
-        ComputeShader *compShader;
+        ComputeShader *compShader0;
+        ComputeShader *compShader1;
     };
 
 }

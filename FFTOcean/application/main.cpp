@@ -8,7 +8,7 @@ int main()
 {
     FFTOcean::Engine engine;
 
-    FFTOcean::Quad quad("./shaders/initial_spectrum.comp", 0.0f, 0.0f, 0.0f, 64);
+    FFTOcean::Quad quad(0.0f, 0.0f, 0.0f);
     engine.registerObject(&quad);
 
     engine.run();

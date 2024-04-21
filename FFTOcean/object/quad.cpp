@@ -19,16 +19,13 @@ Quad::Quad()
     initX = 0.0f;
     initY = 0.0f;
     initZ = 0.0f;
-    OceanSize = 32;
 }
 
-Quad::Quad(const char *_computeShaderSrc, float _initX, float _initY, float _initZ, int _OceanSize)
+Quad::Quad(float _initX, float _initY, float _initZ)
 {
-    computeShaderSrc = _computeShaderSrc;
     initX = _initX;
     initY = _initY;
     initZ = _initZ;
-    OceanSize = _OceanSize;
 }
 
 Quad::~Quad()
@@ -38,26 +35,54 @@ Quad::~Quad()
 void Quad::setup()
 {
     cout << "setup quad" << endl;
-    this->compShader = new ComputeShader(computeShaderSrc);
+    this->compShader0 = new ComputeShader("./shaders/initial_spectrum.comp");
+    this->compShader1 = new ComputeShader("./shaders/fourier_component.comp");
     this->shader = new Shader("./shaders/quad.vert", "./shaders/quad.frag");
 
     shader->use();
 
-    /* Compute Shader */
+    /* Textures for Compute Shader */
 
-    glGenTextures(1, &texture);
+    glGenTextures(1, &texture0);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, texture0);
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,
                  GL_FLOAT, NULL);
 
-    glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+    glGenTextures(1, &texture1);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texture1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,
+                 GL_FLOAT, NULL);
+
+    glGenTextures(1, &texture2);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, texture2);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,
+                 GL_FLOAT, NULL);
+
+    glBindImageTexture(0, texture0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+    glBindImageTexture(1, texture1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+    glBindImageTexture(2, texture2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
     /* Calculate Vertex Positions */
+
     float vertices[] = {
         // vertex position, texture
         -1, -1, 0, 0, 0,
@@ -97,12 +122,20 @@ void Quad::render()
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     // cout << "render Ocean" << endl;
 
-    compShader->use();
-    this->compShader->setInt("N", 256);
-    this->compShader->setInt("L", 1000);
-    this->compShader->setFloat("A", 4);
-    this->compShader->setVec2("w", 1, 1);
-    this->compShader->setFloat("V", 40);
+    compShader0->use();
+    compShader0->setInt("N", 256);
+    compShader0->setInt("L", 1000);
+    compShader0->setFloat("A", 4);
+    compShader0->setVec2("w", 1, 1);
+    compShader0->setFloat("V", 40);
+    glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    compShader1->use();
+    compShader1->setInt("N", 256);
+    compShader1->setInt("L", 1000);
+    compShader1->setFloat("t", float(glfwGetTime()));
     glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
 
     // make sure writing to image has finished before read
@@ -111,9 +144,9 @@ void Quad::render()
     /* Transform */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     shader->use();
-    shader->setInt("tex", 0);
+    shader->setInt("tex", 2);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, texture2);
 
     glm::mat4 model = glm::mat4(1.0f);
 
