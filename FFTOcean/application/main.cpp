@@ -9,7 +9,7 @@ int main()
     FFTOcean::Engine engine;
 
     FFTOcean::Quad quad(0.0f, 0.0f, 0.0f);
-    FFTOcean::Ocean ocean(0, 0, 0, 256);
+    FFTOcean::Ocean ocean(0, 0, 0, 512);
     engine.registerObject(&quad);
     engine.registerObject(&ocean);
 
