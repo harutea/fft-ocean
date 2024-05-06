@@ -29,6 +29,12 @@ namespace FFTOcean
 
     private:
         const unsigned int TEXTURE_WIDTH = 512, TEXTURE_HEIGHT = 512;
+        int pingpong;
+        ComputeShader *initialComp;
+        ComputeShader *fcComp;
+        ComputeShader *btComp;
+        ComputeShader *butterflyComp;
+        ComputeShader *ipComp;
     };
 
 }

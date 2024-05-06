@@ -82,7 +82,6 @@ void Ocean::setup()
     glBindImageTexture(1, texture1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
     glBindImageTexture(2, texture2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
-
     /* Calculate Vertex Positions */
     float *vertices = new float[3 * OceanSize * OceanSize];
 

@@ -35,8 +35,12 @@ Quad::~Quad()
 void Quad::setup()
 {
     cout << "setup quad" << endl;
-    this->compShader0 = new ComputeShader("./shaders/initial_spectrum.comp");
-    this->compShader1 = new ComputeShader("./shaders/fourier_component.comp");
+    this->initialComp = new ComputeShader("./shaders/initial_spectrum.comp");
+    this->fcComp = new ComputeShader("./shaders/fourier_component.comp");
+    this->btComp = new ComputeShader("./shaders/butterfly_texture.comp");
+    this->butterflyComp = new ComputeShader("./shaders/butterfly.comp");
+    this->ipComp = new ComputeShader("./shaders/inverse_and_permute.comp");
+
     this->shader = new Shader("./shaders/quad.vert", "./shaders/quad.frag");
 
     shader->use();
@@ -77,9 +81,56 @@ void Quad::setup()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,
                  GL_FLOAT, NULL);
 
+    glGenTextures(1, &texture3);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, texture3);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,
+                 GL_FLOAT, NULL);
+
+    glGenTextures(1, &texture4);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, texture4);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,
+                 GL_FLOAT, NULL);
+
+    glGenTextures(1, &texture5);
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, texture5);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,
+                 GL_FLOAT, NULL);
+    glGenTextures(1, &texture6);
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, texture6);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,
+                 GL_FLOAT, NULL);
+
     glBindImageTexture(0, texture0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
     glBindImageTexture(1, texture1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
     glBindImageTexture(2, texture2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+    glBindImageTexture(3, texture3, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+    glBindImageTexture(4, texture4, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+    glBindImageTexture(5, texture5, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+    glBindImageTexture(6, texture6, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
     /* Calculate Vertex Positions */
 
@@ -115,38 +166,88 @@ void Quad::setup()
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
-}
 
-void Quad::render()
-{
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    // cout << "render Ocean" << endl;
-
-    compShader0->use();
-    compShader0->setInt("N", 256);
-    compShader0->setInt("L", 1000);
-    compShader0->setFloat("A", 4);
-    compShader0->setVec2("w", 1, 1);
-    compShader0->setFloat("V", 40);
+    /* Initial Spectrum */
+    initialComp->use();
+    initialComp->setInt("N", 256);
+    initialComp->setInt("L", 1000);
+    initialComp->setFloat("A", 4);
+    initialComp->setVec2("w", 1, 1);
+    initialComp->setFloat("V", 40);
     glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
 
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-    compShader1->use();
-    compShader1->setInt("N", 256);
-    compShader1->setInt("L", 1000);
-    compShader1->setFloat("t", float(glfwGetTime()));
-    glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+    /* Butterfly Texture */
+    int n = 256;
+    int *bit_reversed = new int[n];
+    for (int i = 0; i < n; i++)
+    {
+        int reversed = 0;
+        for (int j = 0; j < int(log2(n)); j++)
+        {
+            if (i & (1 << j))
+                reversed |= 1 << (int(log2(n)) - 1 - j);
+        }
+        bit_reversed[i] = reversed;
+    }
+    GLuint ssbo;
+    glGenBuffers(1, &ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(bit_reversed), bit_reversed, GL_DYNAMIC_DRAW);
 
-    // make sure writing to image has finished before read
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, ssbo);
+    btComp->use();
+    btComp->setInt("N", 256);
+    glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+}
+
+void Quad::render()
+{
+    /* Fourier Components */
+    fcComp->use();
+    fcComp->setInt("N", 256);
+    fcComp->setInt("L", 1000);
+    fcComp->setFloat("t", float(glfwGetTime()));
+    glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    pingpong = 0;
+
+    for (int i = 0; i < int(log2(256)); i++)
+    {
+        butterflyComp->use();
+        butterflyComp->setInt("direction", 0);
+        butterflyComp->setInt("stage", i);
+        butterflyComp->setInt("pingpong", pingpong);
+        glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        pingpong = (pingpong + 1) % 2;
+    }
+    for (int i = 0; i < int(log2(256)); i++)
+    {
+        butterflyComp->use();
+        butterflyComp->setInt("direction", 1);
+        butterflyComp->setInt("stage", i);
+        butterflyComp->setInt("pingpong", pingpong);
+        glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        pingpong = (pingpong + 1) % 2;
+    }
+
+    ipComp->use();
+    ipComp->setInt("N", 256);
+    ipComp->setInt("pingpong", pingpong);
+    glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     /* Transform */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     shader->use();
-    shader->setInt("tex", 2);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture2);
+    shader->setInt("tex", 6);
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, texture6);
 
     glm::mat4 model = glm::mat4(1.0f);
 

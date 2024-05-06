@@ -29,6 +29,10 @@ namespace FFTOcean
         unsigned int texture0;
         unsigned int texture1;
         unsigned int texture2;
+        unsigned int texture3;
+        unsigned int texture4;
+        unsigned int texture5;
+        unsigned int texture6;
         glm::mat4 view;
         glm::mat4 projection;
         glm::vec3 cameraPos;
