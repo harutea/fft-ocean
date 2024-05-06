@@ -180,27 +180,39 @@ void Quad::setup()
 
     /* Butterfly Texture */
     int n = 256;
+    int log2n = static_cast<int>(log2(n));
     int *bit_reversed = new int[n];
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i <= n; i++)
     {
         int reversed = 0;
-        for (int j = 0; j < int(log2(n)); j++)
+        for (int j = 0; j < log2n; j++)
         {
             if (i & (1 << j))
-                reversed |= 1 << (int(log2(n)) - 1 - j);
+                reversed |= 1 << (log2n - 1 - j);
         }
-        bit_reversed[i] = reversed;
+        bit_reversed[i] = 10;
     }
     GLuint ssbo;
     glGenBuffers(1, &ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(bit_reversed), bit_reversed, GL_DYNAMIC_DRAW);
-
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int) * n, bit_reversed, GL_DYNAMIC_COPY);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, ssbo);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    cout << glGetError();
+
     btComp->use();
     btComp->setInt("N", 256);
-    glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+    glDispatchCompute(8, 16, 1);
+    glGetError();
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    // glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    // int *ptr = (int *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+    // for (int i = 0; i < 256; i++)
+    // {
+    //     cout << "Data[" << i << "] = " << ptr[i] << endl;
+    // }
+    // glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 }
 
 void Quad::render()
@@ -210,7 +222,7 @@ void Quad::render()
     fcComp->setInt("N", 256);
     fcComp->setInt("L", 1000);
     fcComp->setFloat("t", float(glfwGetTime()));
-    glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+    glDispatchCompute((unsigned int)16, (unsigned int)16, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     pingpong = 0;
@@ -221,7 +233,7 @@ void Quad::render()
         butterflyComp->setInt("direction", 0);
         butterflyComp->setInt("stage", i);
         butterflyComp->setInt("pingpong", pingpong);
-        glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+        glDispatchCompute((unsigned int)16, (unsigned int)16, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         pingpong = (pingpong + 1) % 2;
     }
@@ -231,7 +243,7 @@ void Quad::render()
         butterflyComp->setInt("direction", 1);
         butterflyComp->setInt("stage", i);
         butterflyComp->setInt("pingpong", pingpong);
-        glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+        glDispatchCompute((unsigned int)16, (unsigned int)16, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         pingpong = (pingpong + 1) % 2;
     }
@@ -239,15 +251,15 @@ void Quad::render()
     ipComp->use();
     ipComp->setInt("N", 256);
     ipComp->setInt("pingpong", pingpong);
-    glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+    glDispatchCompute((unsigned int)16, (unsigned int)16, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     /* Transform */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     shader->use();
-    shader->setInt("tex", 6);
-    glActiveTexture(GL_TEXTURE6);
-    glBindTexture(GL_TEXTURE_2D, texture6);
+    shader->setInt("tex", 3);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, texture3);
 
     glm::mat4 model = glm::mat4(1.0f);
 

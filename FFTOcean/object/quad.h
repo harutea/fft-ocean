@@ -28,7 +28,7 @@ namespace FFTOcean
         void updateCameraPos(glm::vec3 _cameraPos);
 
     private:
-        const unsigned int TEXTURE_WIDTH = 512, TEXTURE_HEIGHT = 512;
+        const unsigned int TEXTURE_WIDTH = 256, TEXTURE_HEIGHT = 256;
         int pingpong;
         ComputeShader *initialComp;
         ComputeShader *fcComp;
