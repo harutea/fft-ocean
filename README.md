@@ -1,7 +1,7 @@
 # fft-ocean
 Ocean Wave Simulation using FFT
 
-## Clone
+## Clone with submodules
 ```bash
 git clone --recursive https://github.com/harutea/fft-ocean.git
 ```
