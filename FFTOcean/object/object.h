@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glad/gl.h>
 
 namespace FFTOcean
 {
@@ -26,13 +27,7 @@ namespace FFTOcean
         unsigned int VAO;
         unsigned int VBO;
         unsigned int EBO;
-        unsigned int texture0;
-        unsigned int texture1;
-        unsigned int texture2;
-        unsigned int texture3;
-        unsigned int texture4;
-        unsigned int texture5;
-        unsigned int texture6;
+        GLuint textures[7];
         glm::mat4 view;
         glm::mat4 projection;
         glm::vec3 cameraPos;
