@@ -26,6 +26,8 @@ namespace FFTOcean
         void updateView(glm::mat4 _view);
         void updateProjection(glm::mat4 _projection);
         void updateCameraPos(glm::vec3 _cameraPos);
+        void checkGLError();
+        void checkTextureContent(GLuint texture, int width, int height);
 
     private:
         const unsigned int TEXTURE_WIDTH = 256, TEXTURE_HEIGHT = 256;
@@ -35,6 +37,7 @@ namespace FFTOcean
         ComputeShader *btComp;
         ComputeShader *butterflyComp;
         ComputeShader *ipComp;
+        ComputeShader *copyImageComp;
     };
 
 }
