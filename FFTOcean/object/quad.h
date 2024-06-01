@@ -17,7 +17,7 @@ namespace FFTOcean
 
     public:
         Quad();
-        Quad(float initX, float initY, float initZ);
+        Quad(float _initX, float _initY, float _initZ, int _planeSize);
 
         ~Quad();
         void setup();
@@ -38,6 +38,7 @@ namespace FFTOcean
         ComputeShader *butterflyComp;
         ComputeShader *ipComp;
         ComputeShader *copyImageComp;
+        int planeSize;
     };
 
 }

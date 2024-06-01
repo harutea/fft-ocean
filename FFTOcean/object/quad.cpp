@@ -21,11 +21,12 @@ Quad::Quad()
     initZ = 0.0f;
 }
 
-Quad::Quad(float _initX, float _initY, float _initZ)
+Quad::Quad(float _initX, float _initY, float _initZ, int _planeSize)
 {
     initX = _initX;
     initY = _initY;
     initZ = _initZ;
+    planeSize = _planeSize;
 }
 
 Quad::~Quad()
@@ -42,9 +43,8 @@ void Quad::setup()
     this->ipComp = new ComputeShader("./shaders/inverse_and_permute.comp");
     this->butterflyComp = new ComputeShader("./shaders/butterfly.comp");
 
-    this->shader = new Shader("./shaders/quad.vert", "./shaders/quad.frag");
+    this->shader = new Shader("./shaders/ocean.vert", "./shaders/ocean.frag");
 
-    shader->use();
 
     /* Textures for Compute Shader */
 
@@ -61,17 +61,53 @@ void Quad::setup()
         glBindImageTexture(i, textures[i], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
     }
 
+    /* Set Uniforms */
+    shader->use();
+    shader->setInt("displacement", 6);
+    shader->setVec3("material.ambient", 0.1f, 0.6f, 0.3f);
+    shader->setVec3("material.diffuse", 0.1f, 0.6f, 0.3f);
+    shader->setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+    shader->setFloat("material.shininess", 32.0f);
+
     /* Calculate Vertex Positions */
+    float *vertices = new float[5 * planeSize * planeSize];
 
-    float vertices[] = {
-        // vertex position, texture
-        -1, -1, 0, 0, 0,
-        -1, 1, 0, 0, 1,
-        1, 1, 0, 1, 1,
-        1, -1, 0, 1, 0};
+    for (int i = 0; i < planeSize; i++)
+    {
+        for (int j = 0; j < planeSize; j++)
+        {
+            float &vertX = vertices[i * 5 * planeSize + j * 5];
+            float &vertY = vertices[i * 5 * planeSize + j * 5 + 1];
+            float &vertZ = vertices[i * 5 * planeSize + j * 5 + 2];
+            float &u = vertices[i * 5 * planeSize + j * 5 + 3];
+            float &v = vertices[i * 5 * planeSize + j * 5 + 4];
 
-    unsigned int indices[] = {0, 1, 2,
-                              0, 2, 3};
+            vertX = (float)i/(planeSize-1);
+            vertY = 0;
+            vertZ = (float)j/(planeSize-1);
+
+            u = (float)i/(planeSize-1);
+            v = (float)j/(planeSize-1);
+        }
+    }
+
+    /* Calculate Indices */
+
+    unsigned int *indices = new unsigned int[(planeSize - 1) * (planeSize - 1) * 2 * 3];
+    int current = 0;
+    for (int i = 0; i < planeSize - 1; i++)
+    {
+        for (int j = 0; j < planeSize - 1; j++)
+        {
+            indices[current++] = i * planeSize + j;
+            indices[current++] = i * planeSize + j + planeSize;
+            indices[current++] = i * planeSize + j + planeSize + 1;
+
+            indices[current++] = i * planeSize + j;
+            indices[current++] = i * planeSize + j + planeSize + 1;
+            indices[current++] = i * planeSize + j + 1;
+        }
+    }
 
     /* VAO, VBO, EBO */
     glGenVertexArrays(1, &VAO);
@@ -81,10 +117,10 @@ void Quad::setup()
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 5 * 4, vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 5 * planeSize * planeSize, vertices, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * 6, indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * (planeSize - 1) * (planeSize - 1) * 2 * 3, indices, GL_STATIC_DRAW);
 
     // position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
@@ -92,6 +128,9 @@ void Quad::setup()
     // texture coordinate attribute
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    // normal attribute
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
+    // glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -200,29 +239,37 @@ void Quad::render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindTexture(GL_TEXTURE_2D, textures[6]);
     shader->use();
-    shader->setInt("tex", 6);
 
     glm::mat4 model = glm::mat4(1.0f);
 
     // model = glm::scale(model, glm::vec3(10.0f, 0.5f, 0.5f));
     model = glm::translate(model, glm::vec3(initX, initY, initZ));
 
-    // glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+    glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+
+    glm::vec3 lightPos(1.1f, 3.0f, 2.0f);
+    glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+    glm::vec3 objectColor(0.1f, 1.0f, 0.3f);
+    shader->setVec3("lightPos", lightPos);
+    shader->setVec3("viewPos", cameraPos);
+    shader->setVec3("lightColor", lightColor);
+    shader->setVec3("objectColor", objectColor);
+    shader->setFloat("time", glfwGetTime());
 
     int modelLoc = glGetUniformLocation(shader->getID(), "model");
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-    // int normalMatrixLoc = glGetUniformLocation(shader->getID(), "normalMatrix");
-    // glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    int normalMatrixLoc = glGetUniformLocation(shader->getID(), "normalMatrix");
+    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
     int viewLoc = glGetUniformLocation(shader->getID(), "view");
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     int projectionLoc = glGetUniformLocation(shader->getID(), "projection");
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-    checkGLError();
     /* Draw */
     glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glDrawElements(GL_TRIANGLES, (planeSize - 1) * (planeSize - 1) * 2 * 3, GL_UNSIGNED_INT, 0);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void Quad::clear()
