@@ -134,9 +134,9 @@ void Ocean::setup()
     shader->setInt("heightMap", 6);
     shader->setFloat("texelSize", (float)1/(planeSize-1));
     shader->setVec3("material.ambient",0.0,0.231,0.38);
-    shader->setVec3("material.diffuse", 0.,0.231,0.38);
+    shader->setVec3("material.diffuse", 0.114,0.635,0.847);
     shader->setVec3("material.specular", 0.9f, 0.9f, 0.9f);
-    shader->setFloat("material.shininess", 64.0f);
+    shader->setFloat("material.shininess", 16.0f);
     shader->setInt("sky", 8);
 
     /* Calculate Ocean Vertex Positions and Texture Coordinates */
@@ -258,17 +258,7 @@ void Ocean::render()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    /* Environment Mapping */
-    /* Optimization is Needed. */
-    glDepthMask(GL_FALSE);
-    environmentShader->use();
-    environmentShader->setMat4("view", view);
-    environmentShader->setMat4("projection", projection);
-    glBindVertexArray(this->cubemapVAO);
-    glActiveTexture(GL_TEXTURE8);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, this->cubemapTexture);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    glDepthMask(GL_TRUE);
+    
 
     /* Fourier Components */
     fcComp->use();
@@ -322,7 +312,7 @@ void Ocean::render()
     glBindTexture(GL_TEXTURE_2D, textures[6]);
     shader->use();
 
-    glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(2, 2, 2));
+    glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(4, 4, 4));
 
     model = glm::translate(model, glm::vec3(initX, initY, initZ));
 
@@ -341,11 +331,24 @@ void Ocean::render()
     shader->setMat4("view", view);
     shader->setMat4("projection", projection);
 
-    /* Draw */
+    /* Draw Ocean*/
     glBindVertexArray(VAO);
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glDrawElements(GL_TRIANGLES, (planeSize - 1) * (planeSize - 1) * 2 * 3, GL_UNSIGNED_INT, 0);
     // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    /* Environment Mapping */
+    glDepthFunc(GL_LEQUAL);
+    glm::mat4 cubemapModel = glm::scale(glm::mat4(1.0f), glm::vec3(2, 2, 2));
+    environmentShader->use();
+    environmentShader->setMat4("model", cubemapModel);
+    environmentShader->setMat4("view", view);
+    environmentShader->setMat4("projection", projection);
+    glBindVertexArray(this->cubemapVAO);
+    glActiveTexture(GL_TEXTURE8);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, this->cubemapTexture);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDepthFunc(GL_LESS);
 }
 
 void Ocean::clear()

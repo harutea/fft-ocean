@@ -15,7 +15,7 @@ uniform float time;
 uniform sampler2D heightMap;
 uniform float texelSize;
 
-const float heightScale = 0.3;
+const float heightScale = 1.0;
 
 void main()
 {

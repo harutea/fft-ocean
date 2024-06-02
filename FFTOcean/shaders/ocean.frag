@@ -43,12 +43,12 @@ void main()
 
     // attenuation
     float distance = length(lightPos - FragPos);
-    float attenuation = 1.0 / (1.0 + 0.7 * distance + 0.04 * distance * distance);
+    float attenuation = 1.0 / (1.0 + 0.5 * distance + 0.05 * distance * distance);
     vec3 phongResult = (ambient + diffuse + specular) * attenuation;
 
 
     // Combine
-    vec3 FinalColor = phongResult + environmentResult * 0.4;
+    vec3 FinalColor = phongResult + environmentResult * 0.5;
 
     FragColor = vec4(FinalColor, 1.0);
 }
