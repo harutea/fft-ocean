@@ -35,7 +35,9 @@ Quad::~Quad()
 
 void Quad::setup()
 {
-    cout << "setup quad" << endl;
+    cout << "Setup Ocean" << endl;
+    
+    // Initiailze Shaders
     this->initialComp = new ComputeShader("./shaders/initial_spectrum.comp");
     this->btComp = new ComputeShader("./shaders/butterfly_texture.comp");
     this->fcComp = new ComputeShader("./shaders/fourier_component.comp");
@@ -46,8 +48,7 @@ void Quad::setup()
     this->shader = new Shader("./shaders/ocean.vert", "./shaders/ocean.frag");
 
 
-    /* Textures for Compute Shader */
-
+    /* Initialize Textures for Compute Shader */
     glGenTextures(7, textures);
     for (int i = 0; i < 7; ++i)
     {
@@ -57,19 +58,20 @@ void Quad::setup()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, planeSize, planeSize, 0, GL_RGBA, GL_FLOAT, NULL);
         glBindImageTexture(i, textures[i], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
     }
 
-    /* Set Uniforms */
+    /* Set Uniforms for Vertex Shader and Fragment Shader */
     shader->use();
-    shader->setInt("displacement", 6);
-    shader->setVec3("material.ambient", 0.1f, 0.6f, 0.3f);
-    shader->setVec3("material.diffuse", 0.1f, 0.6f, 0.3f);
+    shader->setInt("heightMap", 6);
+    shader->setFloat("texelSize", (float)1/(planeSize-1));
+    shader->setVec3("material.ambient", 0.0f, 0.1f, 0.2f);
+    shader->setVec3("material.diffuse", 0.114f,0.635f,0.847f);
     shader->setVec3("material.specular", 0.5f, 0.5f, 0.5f);
-    shader->setFloat("material.shininess", 32.0f);
+    shader->setFloat("material.shininess", 64.0f);
 
-    /* Calculate Vertex Positions */
+    /* Calculate Vertex Positions and Texture Coordinates */
     float *vertices = new float[5 * planeSize * planeSize];
 
     for (int i = 0; i < planeSize; i++)
@@ -92,7 +94,6 @@ void Quad::setup()
     }
 
     /* Calculate Indices */
-
     unsigned int *indices = new unsigned int[(planeSize - 1) * (planeSize - 1) * 2 * 3];
     int current = 0;
     for (int i = 0; i < planeSize - 1; i++)
@@ -122,33 +123,29 @@ void Quad::setup()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * (planeSize - 1) * (planeSize - 1) * 2 * 3, indices, GL_STATIC_DRAW);
 
-    // position attribute
+    /*Vertex Position attribute */
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
-    // texture coordinate attribute
+    /* Texture Coordinate attribute */
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    // normal attribute
-    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
-    // glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
     /* Dispatch Initial Spectrum Texture */
     initialComp->use();
-    initialComp->setInt("N", 256);
+    initialComp->setInt("N", planeSize);
     initialComp->setInt("L", 1000);
     initialComp->setFloat("A", 4);
     initialComp->setVec2("w", 1, 1);
     initialComp->setFloat("V", 40);
-    glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+    glDispatchCompute((unsigned int)planeSize, (unsigned int)planeSize, 1);
 
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     /* Pass the bit reversed index to butterfly texture using SSBO */
-
-    int n = 256;
+    int n = planeSize;
     int log2n = static_cast<int>(log2(n));
     int *bit_reversed = new int[n + 1];
     for (int i = 0; i <= n; i++)
@@ -169,16 +166,7 @@ void Quad::setup()
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     delete[] bit_reversed;
 
-    checkGLError();
-
-    /* Dispatch Butterfly Texture */
-
-    btComp->use();
-    btComp->setInt("N", 256);
-    glDispatchCompute(8, 16, 1);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-    checkGLError();
+    /* Check SSBO */
     // glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
     // int *ptr = (int *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
     // for (int i = 0; i < 256; i++)
@@ -186,31 +174,43 @@ void Quad::setup()
     //     cout << "Data[" << i << "] = " << ptr[i] << endl;
     // }
     // glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+    checkGLError();
+
+    /* Dispatch Butterfly Texture */
+    btComp->use();
+    btComp->setInt("N", planeSize);
+    glDispatchCompute((unsigned int)log2(planeSize), (unsigned int)planeSize/16, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    checkGLError();
 }
 
 void Quad::render()
 {
     /* Fourier Components */
     fcComp->use();
-    fcComp->setInt("N", 256);
+    fcComp->setInt("N", planeSize);
     fcComp->setInt("L", 1000);
     fcComp->setFloat("t", float(glfwGetTime()));
-    glDispatchCompute((unsigned int)16, (unsigned int)16, 1);
+    glDispatchCompute((unsigned int)planeSize/16, (unsigned int)planeSize/16, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
+    /* Copy Fourier Components to pingpong0 texture*/
     copyImageComp->use();
-    glDispatchCompute((unsigned int)16, (unsigned int)16, 1);
+    glDispatchCompute((unsigned int)planeSize/16, (unsigned int)planeSize/16, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
+    /* Dispatch Butterfly Shader */
     pingpong = 0;
 
-    for (int i = 0; i < int(log2(256)); i++)
+    for (int i = 0; i < int(log2(planeSize)); i++)
     {
         butterflyComp->use();
         butterflyComp->setInt("direction", 0);
         butterflyComp->setInt("stage", i);
         butterflyComp->setInt("pingpong", pingpong);
-        glDispatchCompute((unsigned int)16, (unsigned int)16, 1);
+        glDispatchCompute((unsigned int)planeSize/16, (unsigned int)planeSize/16, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         pingpong = (pingpong + 1) % 2;
         // if (i == 7)
@@ -218,58 +218,53 @@ void Quad::render()
         //     checkTextureContent(textures[5], 256, 256);
         // }
     }
-    for (int i = 0; i < int(log2(256)); i++)
+    for (int i = 0; i < int(log2(planeSize)); i++)
     {
         butterflyComp->use();
         butterflyComp->setInt("direction", 1);
         butterflyComp->setInt("stage", i);
         butterflyComp->setInt("pingpong", pingpong);
-        glDispatchCompute((unsigned int)16, (unsigned int)16, 1);
+        glDispatchCompute((unsigned int)planeSize/16, (unsigned int)planeSize/16, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         pingpong = (pingpong + 1) % 2;
     }
 
+    /* Dispatch Inverse and Permute Shader */
     ipComp->use();
-    ipComp->setInt("N", 256);
+    ipComp->setInt("N", planeSize);
     ipComp->setInt("pingpong", pingpong);
-    glDispatchCompute((unsigned int)16, (unsigned int)16, 1);
+    glDispatchCompute((unsigned int)planeSize/16, (unsigned int)planeSize/16, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-    /* Transform */
+    /* Transforms */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindTexture(GL_TEXTURE_2D, textures[6]);
     shader->use();
 
     glm::mat4 model = glm::mat4(1.0f);
 
-    // model = glm::scale(model, glm::vec3(10.0f, 0.5f, 0.5f));
     model = glm::translate(model, glm::vec3(initX, initY, initZ));
 
     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-
-    glm::vec3 lightPos(1.1f, 3.0f, 2.0f);
+    glm::vec3 lightPos(initX+0.5f, initY+0.7f, initZ+0.5f);
     glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
-    glm::vec3 objectColor(0.1f, 1.0f, 0.3f);
+
+    /* Set Uniforms */
     shader->setVec3("lightPos", lightPos);
     shader->setVec3("viewPos", cameraPos);
     shader->setVec3("lightColor", lightColor);
-    shader->setVec3("objectColor", objectColor);
     shader->setFloat("time", glfwGetTime());
 
-    int modelLoc = glGetUniformLocation(shader->getID(), "model");
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-    int normalMatrixLoc = glGetUniformLocation(shader->getID(), "normalMatrix");
-    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-    int viewLoc = glGetUniformLocation(shader->getID(), "view");
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    int projectionLoc = glGetUniformLocation(shader->getID(), "projection");
-    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    shader->setMat4("model", model);
+    shader->setMat3("normalMatrix", normalMatrix);
+    shader->setMat4("view", view);
+    shader->setMat4("projection", projection);
 
     /* Draw */
     glBindVertexArray(VAO);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glDrawElements(GL_TRIANGLES, (planeSize - 1) * (planeSize - 1) * 2 * 3, GL_UNSIGNED_INT, 0);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void Quad::clear()
