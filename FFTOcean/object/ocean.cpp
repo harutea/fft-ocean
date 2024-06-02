@@ -36,8 +36,75 @@ Ocean::~Ocean()
 void Ocean::setup()
 {
     cout << "Setup Ocean" << endl;
-    
-    // Initiailze Shaders
+
+    /* Environment Mapping*/
+    vector<string> cubemapFaces = 
+    {
+        "./resources/environments/sky/right.jpg",
+        "./resources/environments/sky/left.jpg",
+        "./resources/environments/sky/top.jpg",
+        "./resources/environments/sky/bottom.jpg",
+        "./resources/environments/sky/front.jpg",
+        "./resources/environments/sky/back.jpg"};
+    this->cubemapTexture = loadCubemap(cubemapFaces);
+    this->environmentShader = new Shader("./shaders/environment_cube.vert", "./shaders/environment_cube.frag");
+
+    float cubemapVertices[] = {
+        // positions          
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        -1.0f,  1.0f, -1.0f,
+        1.0f,  1.0f, -1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        1.0f, -1.0f,  1.0f
+    };
+
+    glGenVertexArrays(1, &cubemapVAO);
+    glGenBuffers(1, &cubemapVBO);
+    glBindVertexArray(cubemapVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubemapVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubemapVertices), &cubemapVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    environmentShader->use();
+    environmentShader->setInt("sky", 8);
+
+    /* Initiailze Shaders for Ocean */
     this->initialComp = new ComputeShader("./shaders/initial_spectrum.comp");
     this->btComp = new ComputeShader("./shaders/butterfly_texture.comp");
     this->fcComp = new ComputeShader("./shaders/fourier_component.comp");
@@ -48,7 +115,7 @@ void Ocean::setup()
     this->shader = new Shader("./shaders/ocean.vert", "./shaders/ocean.frag");
 
 
-    /* Initialize Textures for Compute Shader */
+    /* Initialize Textures for Compute Shader for Ocean */
     glGenTextures(7, textures);
     for (int i = 0; i < 7; ++i)
     {
@@ -62,16 +129,17 @@ void Ocean::setup()
         glBindImageTexture(i, textures[i], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
     }
 
-    /* Set Uniforms for Vertex Shader and Fragment Shader */
+    /* Set Uniforms for Vertex Shader and Fragment Shader for Ocean */
     shader->use();
     shader->setInt("heightMap", 6);
     shader->setFloat("texelSize", (float)1/(planeSize-1));
     shader->setVec3("material.ambient",0.0,0.231,0.38);
     shader->setVec3("material.diffuse", 0.,0.231,0.38);
     shader->setVec3("material.specular", 0.9f, 0.9f, 0.9f);
-    shader->setFloat("material.shininess", 32.0f);
+    shader->setFloat("material.shininess", 64.0f);
+    shader->setInt("sky", 8);
 
-    /* Calculate Vertex Positions and Texture Coordinates */
+    /* Calculate Ocean Vertex Positions and Texture Coordinates */
     float *vertices = new float[5 * planeSize * planeSize];
 
     for (int i = 0; i < planeSize; i++)
@@ -93,7 +161,7 @@ void Ocean::setup()
         }
     }
 
-    /* Calculate Indices */
+    /* Calculate Ocean Indices */
     unsigned int *indices = new unsigned int[(planeSize - 1) * (planeSize - 1) * 2 * 3];
     int current = 0;
     for (int i = 0; i < planeSize - 1; i++)
@@ -110,7 +178,7 @@ void Ocean::setup()
         }
     }
 
-    /* VAO, VBO, EBO */
+    /* Ocean VAO, VBO, EBO */
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
@@ -123,7 +191,7 @@ void Ocean::setup()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * (planeSize - 1) * (planeSize - 1) * 2 * 3, indices, GL_STATIC_DRAW);
 
-    /*Vertex Position attribute */
+    /* Vertex Position attribute */
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
     /* Texture Coordinate attribute */
@@ -188,6 +256,20 @@ void Ocean::setup()
 
 void Ocean::render()
 {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    /* Environment Mapping */
+    /* Optimization is Needed. */
+    glDepthMask(GL_FALSE);
+    environmentShader->use();
+    environmentShader->setMat4("view", view);
+    environmentShader->setMat4("projection", projection);
+    glBindVertexArray(this->cubemapVAO);
+    glActiveTexture(GL_TEXTURE8);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, this->cubemapTexture);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDepthMask(GL_TRUE);
+
     /* Fourier Components */
     fcComp->use();
     fcComp->setInt("N", planeSize);
@@ -237,16 +319,15 @@ void Ocean::render()
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     /* Transforms */
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindTexture(GL_TEXTURE_2D, textures[6]);
     shader->use();
 
-    glm::mat4 model = glm::mat4(1.0f);
+    glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(2, 2, 2));
 
     model = glm::translate(model, glm::vec3(initX, initY, initZ));
 
     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-    glm::vec3 lightPos(initX+0.5f, initY+0.5f, initZ+0.5f);
+    glm::vec3 lightPos(initX, initY+0.5f, initZ);
     glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
 
     /* Set Uniforms */
@@ -313,3 +394,36 @@ void Ocean::checkTextureContent(GLuint texture, int width, int height)
         // cout << data[i] << ' ' << data[i + 1] << ' ';
     }
 }
+
+unsigned int Ocean::loadCubemap(std::vector<std::string> faces)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glActiveTexture(GL_TEXTURE8);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+                         0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+            );
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}  

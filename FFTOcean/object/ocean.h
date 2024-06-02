@@ -28,9 +28,16 @@ namespace FFTOcean
         void updateCameraPos(glm::vec3 _cameraPos);
         void checkGLError();
         void checkTextureContent(GLuint texture, int width, int height);
+        unsigned int loadCubemap(std::vector<std::string> faces);
 
     private:
-        const unsigned int TEXTURE_WIDTH = 256, TEXTURE_HEIGHT = 256;
+        int planeSize;
+        
+        unsigned int cubemapVAO;
+        unsigned int cubemapVBO;
+        GLuint cubemapTexture;
+        Shader *environmentShader;
+
         int pingpong;
         ComputeShader *initialComp;
         ComputeShader *fcComp;
@@ -38,7 +45,6 @@ namespace FFTOcean
         ComputeShader *butterflyComp;
         ComputeShader *ipComp;
         ComputeShader *copyImageComp;
-        int planeSize;
     };
 
 }

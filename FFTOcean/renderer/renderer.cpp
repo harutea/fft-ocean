@@ -21,7 +21,6 @@ void Renderer::setup()
 {
     /* Setup Window */
     glfwInit();
-    glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -51,8 +50,8 @@ void Renderer::setup()
     colorMode = COLOR_BLACK;
 
     /* Setup Camera */
-    cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-    cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
+    cameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
+    cameraTarget = glm::vec3(0.0f, 0.0f, -3.0f);
     cameraDirection = glm::normalize(cameraPos - cameraTarget);
 
     up = glm::vec3(0.0f, 1.0f, 0.0f);

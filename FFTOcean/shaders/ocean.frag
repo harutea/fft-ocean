@@ -15,8 +15,15 @@ uniform vec3 lightPos;
 uniform vec3 viewPos;
 uniform vec3 lightColor;
 
+uniform samplerCube sky;
+
 void main()
 {
+    // Environment Mapping
+    vec3 I = normalize(FragPos - viewPos);
+    vec3 R = reflect(I, normalize(Normal));
+    vec3 environmentResult = texture(sky, R).rgb;
+
     /* Phong Lighting, Phong Shading */
 
     // ambient
@@ -36,11 +43,12 @@ void main()
 
     // attenuation
     float distance = length(lightPos - FragPos);
-    float attenuation = 1.0 / (1.0 + 0.1 * distance + 0.05 * distance * distance);
-    vec3 result = (ambient + diffuse + specular) * attenuation;
+    float attenuation = 1.0 / (1.0 + 0.7 * distance + 0.04 * distance * distance);
+    vec3 phongResult = (ambient + diffuse + specular) * attenuation;
 
-    vec3 foamColor = vec3(1.0);
-    float foamFactor = smoothstep(0.5, 1.0, mix(0.0, 1.0, FragPos.y)) * dot(norm, vec3(0.0, 1.0, 0.0));
 
-    FragColor = vec4(mix(result, foamColor, foamFactor), 1.0);
+    // Combine
+    vec3 FinalColor = phongResult + environmentResult * 0.4;
+
+    FragColor = vec4(FinalColor, 1.0);
 }

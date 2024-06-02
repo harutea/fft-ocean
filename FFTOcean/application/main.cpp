@@ -7,7 +7,7 @@ int main()
 {
     FFTOcean::Engine engine;
 
-    FFTOcean::Ocean ocean(0.0f, -0.5f, 0.0f, 512);
+    FFTOcean::Ocean ocean(-0.5f, 0.0f, -0.5f, 512);
     engine.registerObject(&ocean);
 
     engine.run();
