@@ -4,6 +4,9 @@ layout (location = 1) in vec2 aTexCoord;
 out vec3 FragPos;
 out vec3 Normal;
 
+out float heightMax;
+out float heightMin;
+
 uniform mat4 model;
 uniform mat3 normalMatrix;
 uniform mat4 view;
@@ -12,18 +15,18 @@ uniform float time;
 uniform sampler2D heightMap;
 uniform float texelSize;
 
+const float heightScale = 0.3;
+
 void main()
 {
     FragPos = vec3(model * vec4(aPos, 1.0));
-    //FragPos.y += 1.*sin(FragPos.z + time);
-    FragPos.y += 0.2 * texture(heightMap, aTexCoord).r;
-    // Normal = normalMatrix * aNormal;
+    FragPos.y += heightScale * texture(heightMap, aTexCoord).r;
 
-    // Calculate Normal Vector
-    float L = texture(heightMap, aTexCoord + vec2(-1.0, 0.0) * texelSize).r;
-    float R = texture(heightMap, aTexCoord + vec2(1.0, 0.0) * texelSize).r;
-    float D = texture(heightMap, aTexCoord + vec2(0.0, -1.0) * texelSize).r;
-    float U = texture(heightMap, aTexCoord + vec2(0.0, 1.0) * texelSize).r;
+    // Calculate Normal Vector (using Central Difference)
+    float L = heightScale * texture(heightMap, aTexCoord + vec2(-1.0, 0.0) * texelSize).r;
+    float R = heightScale * texture(heightMap, aTexCoord + vec2(1.0, 0.0) * texelSize).r;
+    float D = heightScale * texture(heightMap, aTexCoord + vec2(0.0, -1.0) * texelSize).r;
+    float U = heightScale * texture(heightMap, aTexCoord + vec2(0.0, 1.0) * texelSize).r;
 
     float dX = (R - L)/2.0;
     float dY = (U - D)/2.0;

@@ -1,5 +1,5 @@
 build/
 .vscode/
-fft-ocean/resources/*.png
-fft-ocean/resources/*.jpg
+FFTOcean/resources/**/*.png
+FFTOcean/resources/**/*.jpg
 .DS_Store

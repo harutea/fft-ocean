@@ -17,7 +17,8 @@ namespace FFTOcean
 
     public:
         Ocean();
-        Ocean(float initX, float initY, float initZ, int OceanSize);
+        Ocean(float _initX, float _initY, float _initZ, int _planeSize);
+
         ~Ocean();
         void setup();
         void render();
@@ -25,11 +26,19 @@ namespace FFTOcean
         void updateView(glm::mat4 _view);
         void updateProjection(glm::mat4 _projection);
         void updateCameraPos(glm::vec3 _cameraPos);
+        void checkGLError();
+        void checkTextureContent(GLuint texture, int width, int height);
 
     private:
-        const unsigned int TEXTURE_WIDTH = 512, TEXTURE_HEIGHT = 512;
-        unsigned int texture;
-        int OceanSize;
+        const unsigned int TEXTURE_WIDTH = 256, TEXTURE_HEIGHT = 256;
+        int pingpong;
+        ComputeShader *initialComp;
+        ComputeShader *fcComp;
+        ComputeShader *btComp;
+        ComputeShader *butterflyComp;
+        ComputeShader *ipComp;
+        ComputeShader *copyImageComp;
+        int planeSize;
     };
 
 }
