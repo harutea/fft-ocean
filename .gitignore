@@ -1,5 +1,6 @@
 build/
 .vscode/
+FFTOcean/shaders/ocean
 FFTOcean/resources/**/*.png
 FFTOcean/resources/**/*.jpg
 .DS_Store
